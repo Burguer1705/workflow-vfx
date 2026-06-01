@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Workflow VFX</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Workflow VFX">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23080810'/><text y='.9em' font-size='72' x='50%' text-anchor='middle' dominant-baseline='hanging'>🎬</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080810;
+    --surface: #0f0f1a;
+    --border: #1c1c2e;
+    --border-2: #2a2a40;
+    --text: #e8e6ff;
+    --muted: #5a5875;
+    --accent: #7c6dfa;
+    --accent2: #fa6d6d;
+    --accent3: #6dfabc;
+    --font-display: 'Syne', sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Fondo con grid sutil */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(124,109,250,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,109,250,0.03) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Orb de luz arriba */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -200px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(124,109,250,0.08) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 20px 60px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── HEADER ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 0 32px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .logo {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: 3px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent3);
+    box-shadow: 0 0 10px var(--accent3);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--accent3); }
+    50% { opacity: .5; box-shadow: 0 0 20px var(--accent3); }
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .status-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border-2);
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: var(--accent3);
+    font-weight: 500;
+  }
+
+  /* ── STATS ROW ── */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+    transition: border-color .2s, transform .2s;
+    animation: fadeUp .5s ease both;
+  }
+
+  .stat-card:hover { border-color: var(--border-2); transform: translateY(-2px); }
+
+  .stat-n {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .stat-l { font-size: 10px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+
+  /* ── ALERT ── */
+  .alert {
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+    border: 1px solid;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    animation: fadeUp .4s ease both;
+  }
+
+  .alert-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .alert-title { font-size: 12px; font-weight: 500; margin-bottom: 3px; }
+  .alert-body { font-size: 11px; opacity: .8; line-height: 1.5; }
+
+  .alert-crit { background: rgba(250,109,109,.06); border-color: rgba(250,109,109,.25); }
+  .alert-crit .alert-title { color: #fa6d6d; }
+
+  .alert-warn { background: rgba(250,189,109,.06); border-color: rgba(250,189,109,.25); }
+  .alert-warn .alert-title { color: #fabd6d; }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex;
+    gap: 2px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 3px;
+    margin-bottom: 20px;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 9px 8px;
+    border-radius: 7px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all .15s;
+    letter-spacing: .5px;
+  }
+
+  .tab.active {
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border-2);
+    font-weight: 500;
+  }
+
+  /* ── SECCIÓN ACTIVA ── */
+  .section { display: none; }
+  .section.visible { display: block; }
+
+  /* ── TASKS ── */
+  .task-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    transition: border-color .2s, transform .2s;
+    cursor: pointer;
+    animation: fadeUp .5s ease both;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .task-card:hover { border-color: var(--border-2); transform: translateX(3px); }
+
+  .task-stripe {
+    width: 3px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    align-self: stretch;
+    min-height: 20px;
+  }
+
+  .task-body { flex: 1; min-width: 0; }
+  .task-title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--text);
+    margin-bottom: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .task-meta { font-size: 10px; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; }
+
+  .task-right { text-align: right; flex-shrink: 0; }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: .5px;
+    margin-bottom: 4px;
+  }
+
+  .badge-crit { background: rgba(250,109,109,.15); color: #fa8080; }
+  .badge-alta { background: rgba(250,189,109,.15); color: #fabd6d; }
+  .badge-media{ background: rgba(109,250,188,.1); color: #6dfabc; }
+  .badge-venc { background: rgba(90,88,117,.2); color: var(--muted); }
+  .badge-ok   { background: rgba(109,250,188,.15); color: #6dfabc; }
+  .badge-info { background: rgba(124,109,250,.15); color: #a89dfc; }
+
+  /* ── PLAN SEMANAL ── */
+  .day-selector {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .day-btn {
+    padding: 7px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .15s;
+  }
+
+  .day-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .day-btn.hoy    { border-color: var(--accent3); color: var(--accent3); }
+
+  .timeline-item {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 4px;
+    align-items: stretch;
+    animation: fadeUp .3s ease both;
+  }
+
+  .tl-time {
+    font-size: 10px;
+    color: var(--muted);
+    width: 40px;
+    flex-shrink: 0;
+    text-align: right;
+    padding-top: 5px;
+  }
+
+  .tl-bar { width: 2px; border-radius: 2px; flex-shrink: 0; }
+
+  .tl-content {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 12px;
+    margin-bottom: 0;
+  }
+
+  .tl-label { font-size: 12px; font-weight: 500; color: var(--text); }
+  .tl-sub   { font-size: 10px; color: var(--muted); margin-top: 1px; }
+
+  /* ── HORARIO ── */
+  .uni-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 7px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    animation: fadeUp .4s ease both;
+  }
+
+  .uni-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .uni-mat { font-family: var(--font-display); font-size: 13px; font-weight: 700; }
+  .uni-days{ font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .uni-teacher { font-size: 10px; color: var(--muted); }
+
+  /* ── EMPTY STATE ── */
+  .empty {
+    text-align: center;
+    padding: 48px 0;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .empty-icon { font-size: 36px; margin-bottom: 12px; opacity: .3; }
+
+  /* ── LOADER ── */
+  .loader {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 0;
+    gap: 16px;
+  }
+
+  .loader-ring {
+    width: 36px; height: 36px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    text-align: center;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border);
+    margin-top: 40px;
+  }
+
+  .refresh-btn {
+    background: transparent;
+    border: 1px solid var(--border-2);
+    color: var(--muted);
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    cursor: pointer;
+    transition: all .15s;
+    margin-left: 12px;
+    letter-spacing: 1px;
+  }
+
+  .refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .countdown {
+    font-size: 10px;
+    color: var(--muted);
+    margin-left: 8px;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo">
+      <div class="logo-dot"></div>
+      WORKFLOW <span style="color:var(--accent)">///</span> VFX
+    </div>
+    <div class="header-right">
+      <span id="last-update" style="font-size:10px;color:var(--muted)">cargando...</span>
+      <span class="status-badge" id="status-badge">CONECTANDO</span>
+      <button class="refresh-btn" onclick="fetchData(true)">↻ actualizar</button>
+    </div>
+  </header>
+
+  <!-- ALERTAS -->
+  <div id="alerts-zone"></div>
+
+  <!-- STATS -->
+  <div class="stats" id="stats-zone">
+    <div class="stat-card"><div class="stat-n" style="color:var(--muted)">—</div><div class="stat-l">Cargando</div></div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('plan')">📆 Plan semanal</button>
+    <button class="tab" onclick="switchTab('tareas')">📋 Tareas</button>
+    <button class="tab" onclick="switchTab('horario')">🎓 Horario</button>
+  </div>
+
+  <!-- PLAN SEMANAL -->
+  <div id="sec-plan" class="section visible">
+    <div class="day-selector" id="day-btns"></div>
+    <div id="day-content">
+      <div class="loader"><div class="loader-ring"></div><span style="font-size:11px;color:var(--muted)">cargando plan...</span></div>
+    </div>
+  </div>
+
+  <!-- TAREAS -->
+  <div id="sec-tareas" class="section">
+    <div id="tasks-zone">
+      <div class="loader"><div class="loader-ring"></div></div>
+    </div>
+  </div>
+
+  <!-- HORARIO UNI -->
+  <div id="sec-horario" class="section">
+    <div id="uni-zone"></div>
+  </div>
+
+  <footer>
+    IAEV 2026-2 · 230170@upbc.edu.mx · AUTO-SYNC ACTIVO
+    <span class="countdown" id="next-refresh"></span>
+  </footer>
+
+</div>
+
+<script>
+// ──────────────────────────────────────────────────────────
+// CONFIGURACIÓN — REEMPLAZA ESTA URL CON LA DE TU WEB APP
+// ──────────────────────────────────────────────────────────
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxLWq2b1SQlrsPSsJIVO3Q3-1DCnFjQXeUroOJ28yElts77aWSKKy5-mgamoiSnLnhIIw/exec";
+
+// ──────────────────────────────────────────────────────────
+// DATOS ESTÁTICOS (horario uni + plan de emergencia si no hay red)
+// ──────────────────────────────────────────────────────────
+const UNI_SCHEDULE = [
+  { mat:"Estancia II",          teacher:"Bernal Marín Luis Antonio",          days:"V 14–15h",                    color:"#888780" },
+  { mat:"Composición Efectos",  teacher:"Gutiérrez Figueroa César",           days:"M 9–11h · Mi 12–14h · J 7–8h",color:"#378ADD" },
+  { mat:"Dinámicos y Fluidos",  teacher:"Bojórquez Ojeda Francisco Javier",   days:"M 7–9h · V 8–10h",            color:"#D4537E" },
+  { mat:"Gestión de Proyectos", teacher:"Gutiérrez Figueroa César",           days:"L 7–9h · Mi 11–12h · J–V 13–14h",color:"#BA7517"},
+  { mat:"Painting 3D",          teacher:"Bernal Marín Luis Antonio",          days:"L 13–14h · M 13–14h · J 8–10h",color:"#534AB7"},
+  { mat:"Regional 4 (Sim 3D)",  teacher:"Bojórquez Ojeda Francisco Javier",   days:"Mi 8–10h · V 10–13h",         color:"#1D9E75" },
+  { mat:"Rigging Avanzado",     teacher:"Bojórquez Ojeda Francisco Javier",   days:"L 9–11h · Mi 10–11h · J 10–13h",color:"#D85A30"},
+];
+
+const DIAS = ["L","M","Mi","J","V","S"];
+const DIAS_LABELS = { L:"Lunes",M:"Martes",Mi:"Miércoles",J:"Jueves",V:"Viernes",S:"Sábado" };
+
+let allTasks = [];
+let weekPlan  = {};
+let activeDay = "L";
+let refreshTimer = 300; // segundos para próximo auto-refresh
+let countdownInterval;
+
+// ──────────────────────────────────────────────────────────
+// FETCH PRINCIPAL
+// ──────────────────────────────────────────────────────────
+async function fetchData(manual = false) {
+  if (SCRIPT_URL === "PEGA_AQUI_TU_URL_DE_WEB_APP") {
+    renderOfflineMode();
+    return;
+  }
+
+  try {
+    document.getElementById("status-badge").textContent = "SINCRONIZANDO";
+    document.getElementById("status-badge").style.color = "#fabd6d";
+
+    const res  = await fetch(SCRIPT_URL + (manual ? "?force=1" : ""));
+    const data = await res.json();
+
+    allTasks = data.tareas || [];
+    weekPlan = data.plan   || {};
+
+    aplicarEntregadas();
+    weekPlan = generarPlanLocal(allTasks);
+    renderAll();
+
+    const now = new Date(data.updated || new Date());
+    document.getElementById("last-update").textContent =
+      "sync " + now.toLocaleTimeString("es-MX", { hour:"2-digit", minute:"2-digit" });
+    document.getElementById("status-badge").textContent = "EN VIVO";
+    document.getElementById("status-badge").style.color = "#6dfabc";
+
+    startCountdown();
+
+  } catch (err) {
+    document.getElementById("status-badge").textContent = "SIN CONEXIÓN";
+    document.getElementById("status-badge").style.color = "#fa6d6d";
+    renderOfflineMode();
+  }
+}
+
+// ──────────────────────────────────────────────────────────
+// MODO OFFLINE (datos de ejemplo del correo que ya leímos)
+// ──────────────────────────────────────────────────────────
+function renderOfflineMode() {
+  allTasks = [
+    { titulo:"Práctica 3 — Uso de IA para Gestión de Proyecto", materia:"Gestión de Proyectos", fechaEntrega:"2026-06-01", prioridad:"Crítica", estado:"Pendiente", horasEst:2, color:"BA7517" },
+    { titulo:"Examen Músculos",                                  materia:"Rigging Avanzado",     fechaEntrega:"2026-06-04", prioridad:"Alta",    estado:"Pendiente", horasEst:4, color:"D85A30" },
+    { titulo:"Examen",                                           materia:"Simulación 3D R4",     fechaEntrega:"2026-06-03", prioridad:"Alta",    estado:"Pendiente", horasEst:3, color:"1D9E75" },
+    { titulo:"Tarea 2 — Propiedades Arnold",                     materia:"Painting 3D",          fechaEntrega:"2026-06-01", prioridad:"Alta",    estado:"Pendiente", horasEst:2, color:"534AB7" },
+    { titulo:"Práctica 4 — Track pantalla verde",                materia:"Composición Efectos",  fechaEntrega:"2026-06-08", prioridad:"Media",   estado:"Pendiente", horasEst:4, color:"378ADD" },
+    { titulo:"1.4 Leg Real Muscle System",                       materia:"Rigging Avanzado",     fechaEntrega:"2026-05-30", prioridad:"Vencida", estado:"Vencida",   horasEst:0, color:"888780" },
+    { titulo:"Revisión / Avance I",                              materia:"Estancia II",          fechaEntrega:"2026-05-30", prioridad:"Vencida", estado:"Vencida",   horasEst:0, color:"888780" },
+  ];
+  weekPlan = generarPlanLocal(allTasks);
+  renderAll();
+  document.getElementById("status-badge").textContent = "DEMO";
+  document.getElementById("status-badge").style.color = "#a89dfc";
+  document.getElementById("last-update").textContent = "datos de muestra";
+}
+
+// ──────────────────────────────────────────────────────────
+// PLAN LOCAL — asigna tareas al día correcto antes de su entrega
+// ──────────────────────────────────────────────────────────
+function generarPlanLocal(tareas) {
+  // Mapa: key del día -> número de día de semana (lunes=1...sábado=6)
+  const diaNum = { L:1, M:2, Mi:3, J:4, V:5, S:6 };
+  const dias   = ["L","M","Mi","J","V","S"];
+  const plan   = { L:[], M:[], Mi:[], J:[], V:[], S:[] };
+
+  const hoy      = new Date();
+  const hoyNum   = hoy.getDay() === 0 ? 7 : hoy.getDay(); // dom=7
+  const horasLib = { L:5.5, M:5.5, Mi:5.5, J:5.5, V:5.5, S:4 };
+  const usadas   = { L:0, M:0, Mi:0, J:0, V:0, S:0 };
+
+  const pend = tareas
+    .filter(t => t.estado === "Pendiente" && t.prioridad !== "Vencida")
+    .sort((a,b) => {
+      // ordenar por fecha de entrega primero, luego prioridad
+      const fa = a.fechaEntrega ? new Date(a.fechaEntrega) : new Date("2099-01-01");
+      const fb = b.fechaEntrega ? new Date(b.fechaEntrega) : new Date("2099-01-01");
+      if (fa - fb !== 0) return fa - fb;
+      const o = { Crítica:0, Alta:1, Media:2, Baja:3 };
+      return (o[a.prioridad]||4) - (o[b.prioridad]||4);
+    });
+
+  pend.forEach(t => {
+    const due = t.fechaEntrega ? new Date(t.fechaEntrega) : null;
+    const dueNum = due ? (due.getDay() === 0 ? 7 : due.getDay()) : 7;
+
+    // Encontrar el día más tarde posible antes de la entrega (sin pasarse)
+    // Preferimos el día anterior a la entrega
+    const candidatos = dias.filter(d => {
+      const n = diaNum[d];
+      return n >= hoyNum && n < dueNum;
+    });
+
+    // Si no hay día antes de la entrega, usar el mismo día de entrega o el más cercano
+    const pool = candidatos.length > 0 ? candidatos : dias.filter(d => diaNum[d] >= hoyNum);
+
+    // Elegir el día con más horas libres restantes (el más vacío primero)
+    pool.sort((a,b) => (horasLib[b] - usadas[b]) - (horasLib[a] - usadas[a]));
+
+    for (const d of pool) {
+      const libre = horasLib[d] - usadas[d];
+      if (libre <= 0) continue;
+      const he = Math.min(t.horasEst || 2, libre);
+      plan[d].push({ titulo:t.titulo, materia:t.materia, horas:he, color:t.color, due:t.fechaEntrega });
+      usadas[d] += he;
+      break;
+    }
+  });
+
+  return plan;
+}
+
+// ──────────────────────────────────────────────────────────
+// RENDER COMPLETO
+// ──────────────────────────────────────────────────────────
+function renderAll() {
+  renderAlerts();
+  renderStats();
+  renderDayBtns();
+  renderDayContent(activeDay);
+  renderTasks();
+  renderUni();
+}
+
+// ──────────────────────────────────────────────────────────
+// ALERTAS
+// ──────────────────────────────────────────────────────────
+function renderAlerts() {
+  const z = document.getElementById("alerts-zone");
+  z.innerHTML = "";
+
+  const hoy = new Date().toISOString().slice(0,10);
+  const manana = new Date(Date.now() + 86400000).toISOString().slice(0,10);
+
+  const criticas = allTasks.filter(t => t.prioridad === "Crítica" && t.estado === "Pendiente");
+  const vencidas = allTasks.filter(t => t.prioridad === "Vencida");
+
+  if (vencidas.length) {
+    z.innerHTML += `<div class="alert alert-crit" style="flex-direction:column;gap:0">
+      <div style="display:flex;align-items:center;gap:10px;cursor:pointer" onclick="toggleVencidas()">
+        <div class="alert-icon">⚡</div>
+        <div class="alert-title" style="flex:1">Tareas vencidas (${vencidas.length}) — toca para ver</div>
+        <span id="venc-arrow" style="font-size:12px;color:#fa8080;transition:transform .2s">▼</span>
+      </div>
+      <div id="venc-list" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid rgba(250,109,109,.2)">
+        ${vencidas.map((t,i) => `
+          <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)" data-titulo="${t.titulo}" data-materia="${t.materia}">
+            <span style="flex:1;font-size:11px;color:#ccc">${t.titulo} · <span style="color:#777">${t.materia}</span></span>
+            <button onclick="marcarEntregada(this)" style="font-size:10px;padding:2px 8px;border-radius:4px;border:1px solid rgba(109,250,188,.3);color:#6dfabc;background:transparent;cursor:pointer;white-space:nowrap">✓ Ya entregué</button>
+          </div>`).join("")}
+      </div>
+    </div>`;
+  }
+
+  criticas.forEach(t => {
+    z.innerHTML += `<div class="alert alert-warn">
+      <div class="alert-icon">⏰</div>
+      <div>
+        <div class="alert-title">Entrega próxima — ${t.fechaEntrega}</div>
+        <div class="alert-body">${t.titulo} · ${t.materia} · ~${t.horasEst}h estimadas</div>
+      </div></div>`;
+  });
+}
+
+// ──────────────────────────────────────────────────────────
+// STATS
+// ──────────────────────────────────────────────────────────
+function renderStats() {
+  const pendientes = allTasks.filter(t => t.estado === "Pendiente");
+  const vencidas   = allTasks.filter(t => t.prioridad === "Vencida");
+  const criticas   = allTasks.filter(t => t.prioridad === "Crítica" && t.estado === "Pendiente");
+  const totalH     = pendientes.reduce((s,t)=> s + (t.horasEst||0), 0);
+
+  document.getElementById("stats-zone").innerHTML = `
+    <div class="stat-card" style="animation-delay:.0s">
+      <div class="stat-n" style="color:#fa6d6d">${vencidas.length}</div>
+      <div class="stat-l">Vencidas</div>
+    </div>
+    <div class="stat-card" style="animation-delay:.05s">
+      <div class="stat-n" style="color:#fabd6d">${criticas.length}</div>
+      <div class="stat-l">Críticas</div>
+    </div>
+    <div class="stat-card" style="animation-delay:.1s">
+      <div class="stat-n" style="color:#7c6dfa">${pendientes.length}</div>
+      <div class="stat-l">Pendientes</div>
+    </div>
+    <div class="stat-card" style="animation-delay:.15s">
+      <div class="stat-n" style="color:#6dfabc">${totalH}h</div>
+      <div class="stat-l">Trabajo total</div>
+    </div>
+  `;
+}
+
+// ──────────────────────────────────────────────────────────
+// BOTONES DE DÍA
+// ──────────────────────────────────────────────────────────
+function renderDayBtns() {
+  const todayIdx = new Date().getDay(); // 0=dom,1=lun...
+  const todayKey = ["D","L","M","Mi","J","V","S"][todayIdx];
+  const z = document.getElementById("day-btns");
+  z.innerHTML = "";
+  DIAS.forEach(d => {
+    const btn = document.createElement("button");
+    btn.className = "day-btn" + (d === activeDay ? " active" : "") + (d === todayKey && d !== activeDay ? " hoy" : "");
+    btn.textContent = DIAS_LABELS[d].slice(0,3) + (d === todayKey ? " ●" : "");
+    btn.onclick = () => { activeDay = d; renderDayBtns(); renderDayContent(d); };
+    z.appendChild(btn);
+  });
+}
+
+// ──────────────────────────────────────────────────────────
+// CONTENIDO DE DÍA
+// ──────────────────────────────────────────────────────────
+function renderDayContent(day) {
+  const z    = document.getElementById("day-content");
+  const plan = weekPlan[day] || [];
+  let h = `<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px">`;
+
+  // Bloque trabajo (L-V)
+  if (day !== "S" && day !== "D") {
+    h += tlItem("16:30", "Trabajo", "Hasta 19:30 — bloqueado", "#fa6d6d", "16:30–19:30");
+  }
+
+  // Bloques de estudio
+  if (day === "S") {
+    if (plan.length) {
+      h += tlItem("10:00", "Tiempo libre", "Solo si no hay planes 💛", "#fabd6d", "10:00–14:00");
+    } else {
+      h += `<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">Sábado libre — no se asignaron tareas 💛</div>`;
+    }
+  } else if (day !== "S") {
+    let hora = 19.5;
+    if (plan.length) {
+      plan.forEach(t => {
+        const horaStr = formatHora(hora);
+        const horaFin = formatHora(hora + t.horas);
+        h += tlItem(horaStr, t.titulo, `${t.materia} · ${t.horas}h`, "#" + t.color, `${horaStr}–${horaFin}`);
+        hora += t.horas;
+      });
+    } else {
+      h += tlItem("19:30", "Sin tareas asignadas", "Tiempo libre para avanzar", "#6dfabc", "19:30–01:00");
+    }
+    h += tlItem("01:00", "Dormir 🌙", "Sleep cutoff — nada después de aquí", "#5a5875", "~01:00am");
+  }
+
+  h += "</div>";
+  z.innerHTML = h;
+}
+
+function tlItem(hora, titulo, sub, color, rango) {
+  return `<div class="timeline-item">
+    <div class="tl-time">${hora}</div>
+    <div class="tl-bar" style="background:${color}"></div>
+    <div class="tl-content">
+      <div class="tl-label">${titulo}</div>
+      <div class="tl-sub">${sub}</div>
+    </div>
+  </div>`;
+}
+
+function formatHora(h) {
+  const base = h >= 24 ? h - 24 : h;
+  const hh   = Math.floor(base);
+  const mm   = (base % 1 === .5) ? "30" : "00";
+  return `${String(hh).padStart(2,"0")}:${mm}`;
+}
+
+// ──────────────────────────────────────────────────────────
+// LISTA DE TAREAS
+// ──────────────────────────────────────────────────────────
+function renderTasks() {
+  const z = document.getElementById("tasks-zone");
+  if (!allTasks.length) { z.innerHTML = `<div class="empty"><div class="empty-icon">📭</div>Sin tareas detectadas aún</div>`; return; }
+
+  const sorted = [...allTasks].sort((a,b) => {
+    const o = { Vencida:0, Crítica:1, Alta:2, Media:3, Baja:4, Entregada:5, Info:6 };
+    return (o[a.prioridad]||5) - (o[b.prioridad]||5);
+  });
+
+  z.innerHTML = sorted.map((t,i) => {
+    const badgeClass = { Crítica:"badge-crit", Alta:"badge-alta", Media:"badge-media", Vencida:"badge-venc", Entregada:"badge-ok", Info:"badge-info" }[t.prioridad] || "badge-media";
+    const opacity = (t.prioridad === "Vencida" || t.estado === "Entregada") ? "opacity:.55" : "";
+    return `<div class="task-card" style="${opacity};animation-delay:${i*.04}s">
+      <div class="task-stripe" style="background:#${t.color}"></div>
+      <div class="task-body">
+        <div class="task-title">${t.titulo}</div>
+        <div class="task-meta">
+          <span>${t.materia}</span>
+          ${t.fechaEntrega ? `<span>vence ${t.fechaEntrega.slice(5)}</span>` : ""}
+          ${t.horasEst ? `<span>~${t.horasEst}h</span>` : ""}
+        </div>
+      </div>
+      <div class="task-right">
+        <div class="badge ${badgeClass}">${t.prioridad.toUpperCase()}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px">${t.estado}</div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+// ──────────────────────────────────────────────────────────
+// HORARIO UNI
+// ──────────────────────────────────────────────────────────
+function renderUni() {
+  document.getElementById("uni-zone").innerHTML = UNI_SCHEDULE.map((u,i) =>
+    `<div class="uni-card" style="animation-delay:${i*.05}s">
+      <div class="uni-dot" style="background:${u.color}"></div>
+      <div>
+        <div class="uni-mat">${u.mat}</div>
+        <div class="uni-days">${u.days}</div>
+        <div class="uni-teacher">${u.teacher}</div>
+      </div>
+    </div>`
+  ).join("");
+}
+
+// ──────────────────────────────────────────────────────────
+// TABS
+// ──────────────────────────────────────────────────────────
+function switchTab(id) {
+  document.querySelectorAll(".section").forEach(s => s.classList.remove("visible"));
+  document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
+  document.getElementById("sec-" + id).classList.add("visible");
+  event.target.classList.add("active");
+}
+
+// ──────────────────────────────────────────────────────────
+// COUNTDOWN AUTO-REFRESH
+// ──────────────────────────────────────────────────────────
+function startCountdown() {
+  clearInterval(countdownInterval);
+  refreshTimer = 300;
+  countdownInterval = setInterval(() => {
+    refreshTimer--;
+    const m = Math.floor(refreshTimer / 60);
+    const s = refreshTimer % 60;
+    document.getElementById("next-refresh").textContent =
+      `próximo sync en ${m}:${String(s).padStart(2,"0")}`;
+    if (refreshTimer <= 0) { fetchData(); }
+  }, 1000);
+}
+
+// ──────────────────────────────────────────────────────────
+// MARCAR COMO ENTREGADA (local, persiste en localStorage)
+// ──────────────────────────────────────────────────────────
+const entregadasKey = "wf_entregadas";
+function getEntregadas() {
+  try { return JSON.parse(localStorage.getItem(entregadasKey) || "[]"); } catch { return []; }
+}
+function marcarEntregada(btn) {
+  const row    = btn.closest("[data-titulo]");
+  const titulo = row.dataset.titulo;
+  const mat    = row.dataset.materia;
+  const lista  = getEntregadas();
+  if (!lista.find(e => e.titulo === titulo && e.materia === mat)) {
+    lista.push({ titulo, materia: mat });
+    localStorage.setItem(entregadasKey, JSON.stringify(lista));
+  }
+  // Quitar de la UI inmediatamente
+  allTasks = allTasks.map(t =>
+    t.titulo === titulo && t.materia === mat
+      ? { ...t, estado:"Entregada", prioridad:"Entregada" }
+      : t
+  );
+  renderAll();
+}
+
+function toggleVencidas() {
+  const list  = document.getElementById("venc-list");
+  const arrow = document.getElementById("venc-arrow");
+  if (!list) return;
+  const open = list.style.display === "block";
+  list.style.display  = open ? "none" : "block";
+  arrow.style.transform = open ? "" : "rotate(180deg)";
+}
+
+function aplicarEntregadas() {
+  const lista = getEntregadas();
+  if (!lista.length) return;
+  allTasks = allTasks.map(t => {
+    const yaEntregada = lista.find(e => e.titulo === t.titulo && e.materia === t.materia);
+    return yaEntregada ? { ...t, estado:"Entregada", prioridad:"Entregada" } : t;
+  });
+}
+
+// ──────────────────────────────────────────────────────────
+// INIT
+// ──────────────────────────────────────────────────────────
+fetchData();
+renderUni();
+</script>
+</body>
+</html>
